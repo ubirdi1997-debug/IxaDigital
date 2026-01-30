@@ -124,6 +124,10 @@ NODE_ENV=production
 # Security
 JWT_SECRET=$JWT_SECRET
 
+# Admin (seed on first start or reset when ADMIN_PASSWORD set)
+ADMIN_EMAIL=admin@ixadigital.com
+ADMIN_PASSWORD=admin123
+
 # URLs
 FRONTEND_URL=https://$DOMAIN
 
@@ -158,7 +162,7 @@ yarn install
 # Create frontend .env file
 print_message "$BLUE" "Creating frontend environment configuration..."
 cat > .env << EOF
-REACT_APP_BACKEND_URL=http://localhost:$BACKEND_PORT
+REACT_APP_BACKEND_URL=https://$DOMAIN
 REACT_APP_SITE_NAME=IXA Digital
 EOF
 

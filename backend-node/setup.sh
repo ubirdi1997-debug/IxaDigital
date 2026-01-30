@@ -106,7 +106,11 @@ PORT=3030
 NODE_ENV=production
 
 # JWT Secret - CHANGE THIS IN PRODUCTION!
-JWT_SECRET=ixa-digital-secret-change-me-in-production
+JWT_SECRET=65e93174cca7301b2b5af7f2f8d0e3ea84a731d00812e92746a06dd9a0231de194f4a146eb30c015113eaf87f9a59dd5c9a38451f5d3a01948f382c16efb48d4
+
+# Admin (seed on first start or reset when ADMIN_PASSWORD set)
+ADMIN_EMAIL=admin@ixadigital.com
+ADMIN_PASSWORD=admin123
 
 # Frontend URL (for CORS and sitemap)
 FRONTEND_URL=https://ixadigital.com

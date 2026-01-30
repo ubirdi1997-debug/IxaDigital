@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import axios from 'axios';
 import { Search, Ticket, Calendar, MessageSquare, Send, AlertCircle, CheckCircle } from 'lucide-react';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || window.location.origin;
 
 const TrackTicket = () => {
   const navigate = useNavigate();

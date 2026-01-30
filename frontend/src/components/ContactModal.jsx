@@ -10,7 +10,7 @@ import axios from 'axios';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { useRecaptcha } from '../hooks/useRecaptcha';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || window.location.origin;
 
 const ContactModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({

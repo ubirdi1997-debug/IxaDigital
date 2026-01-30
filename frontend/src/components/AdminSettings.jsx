@@ -10,7 +10,7 @@ import axios from 'axios';
 import { Save, Mail, Send, Globe, TrendingUp, Upload, Image } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || window.location.origin;
 
 const AdminSettings = () => {
   const navigate = useNavigate();

@@ -119,19 +119,31 @@ async function initAllDatabases() {
 
     console.log('✓ All databases initialized');
     
-    // Create default admin if not exists
+    // Create or update default admin using env (fallbacks are safe defaults)
     const bcrypt = require('bcryptjs');
-    if (databases.admins.data.users.length === 0) {
-      const hashedPassword = await bcrypt.hash('admin123', 10);
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@ixadigital.com';
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const existingAdmin = databases.admins.data.users.find(
+      (u) => u.email === adminEmail || u.username === adminEmail
+    );
+
+    if (!existingAdmin) {
+      const hashedPassword = await bcrypt.hash(adminPassword, 10);
       databases.admins.data.users.push({
         id: generateId(),
-        email: 'admin@ixadigital.com',
-        username: 'admin@ixadigital.com',
+        email: adminEmail,
+        username: adminEmail,
         password: hashedPassword,
         created_at: new Date().toISOString()
       });
       await databases.admins.write();
-      console.log('✓ Default admin user created (admin@ixadigital.com / admin123)');
+      console.log(`✓ Default admin user created (${adminEmail} / provided password)`);
+    } else if (process.env.ADMIN_PASSWORD) {
+      const hashedPassword = await bcrypt.hash(adminPassword, 10);
+      existingAdmin.password = hashedPassword;
+      existingAdmin.updated_at = new Date().toISOString();
+      await databases.admins.write();
+      console.log(`✓ Admin password updated for ${adminEmail}`);
     }
     
     return databases;
