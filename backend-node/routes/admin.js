@@ -257,7 +257,14 @@ router.delete('/tickets/:id', verifyToken, async (req, res) => {
 router.get('/settings', verifyToken, async (req, res) => {
   try {
     await databases.settings.read();
-    res.json({ success: true, settings: databases.settings.data });
+    // Map database keys to frontend expected keys
+    const settings = {
+      email_settings: databases.settings.data.email,
+      seo_settings: databases.settings.data.seo,
+      branding: databases.settings.data.branding,
+      recaptcha_settings: databases.settings.data.recaptcha
+    };
+    res.json({ success: true, settings });
   } catch (error) {
     res.status(500).json({ detail: 'Failed to fetch settings' });
   }
@@ -270,15 +277,25 @@ router.put('/settings', verifyToken, async (req, res) => {
     
     await databases.settings.read();
     
-    if (email_settings) databases.settings.data.email = email_settings;
-    if (seo_settings) databases.settings.data.seo = seo_settings;
-    if (branding) databases.settings.data.branding = branding;
-    if (recaptcha_settings) databases.settings.data.recaptcha = recaptcha_settings;
+    // Map frontend keys to database keys and update
+    if (email_settings) {
+      databases.settings.data.email = email_settings;
+    }
+    if (seo_settings) {
+      databases.settings.data.seo = seo_settings;
+    }
+    if (branding) {
+      databases.settings.data.branding = branding;
+    }
+    if (recaptcha_settings) {
+      databases.settings.data.recaptcha = recaptcha_settings;
+    }
     
     await databases.settings.write();
     
     res.json({ success: true, message: 'Settings updated successfully' });
   } catch (error) {
+    console.error('Settings update error:', error);
     res.status(500).json({ detail: 'Failed to update settings' });
   }
 });

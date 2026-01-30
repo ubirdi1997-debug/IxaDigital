@@ -19,10 +19,9 @@ NC='\033[0m' # No Color
 # Configuration variables
 DOMAIN="ixadigital.com"
 APP_DIR="/home/ixadigital/htdocs/$DOMAIN"
-DB_NAME="ixadigital_db"
-DB_USER="ixadigital_user"
-ADMIN_USER="admin"
-ADMIN_PASS="IXADigital@2026"
+ADMIN_USER="admin@ixadigital.com"
+ADMIN_PASS="admin123"
+BACKEND_PORT=3030
 
 # Function to print colored output
 print_message() {
@@ -79,44 +78,10 @@ else
 fi
 
 ################################################################################
-# 3. Install Python 3.11
+# 3. Create Application Directory
 ################################################################################
 
-print_header "Step 3: Installing Python 3.11"
-
-if ! command -v python3.11 &> /dev/null; then
-    add-apt-repository ppa:deadsnakes/ppa -y
-    apt update
-    apt install -y python3.11 python3.11-venv python3.11-dev python3-pip
-    print_message "$GREEN" "✓ Python $(python3.11 --version) installed"
-else
-    print_message "$YELLOW" "⚠ Python 3.11 already installed"
-fi
-
-################################################################################
-# 4. Install MongoDB 6.0
-################################################################################
-
-print_header "Step 4: Installing MongoDB 6.0"
-
-if ! command -v mongod &> /dev/null; then
-    wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | apt-key add -
-    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/6.0 multiverse" > /etc/apt/sources.list.d/mongodb-org-6.0.list
-    apt update
-    apt install -y mongodb-org
-    systemctl start mongod
-    systemctl enable mongod
-    print_message "$GREEN" "✓ MongoDB installed and started"
-else
-    print_message "$YELLOW" "⚠ MongoDB already installed"
-    systemctl start mongod 2>/dev/null || true
-fi
-
-################################################################################
-# 5. Create Application Directory
-################################################################################
-
-print_header "Step 5: Setting Up Application Directory"
+print_header "Step 3: Setting Up Application Directory"
 
 if [ ! -d "$APP_DIR" ]; then
     mkdir -p "$APP_DIR"
@@ -128,74 +93,36 @@ fi
 cd "$APP_DIR"
 
 ################################################################################
-# 6. Create Database and User
+# 4. Setup Backend (Node.js + Express + LowDB)
 ################################################################################
 
-print_header "Step 6: Configuring MongoDB Database"
+print_header "Step 4: Setting Up Backend"
 
-# Generate random password for database
-DB_PASS=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
-
-# Create MongoDB user
-mongo --eval "
-use $DB_NAME
-db.createUser({
-  user: '$DB_USER',
-  pwd: '$DB_PASS',
-  roles: [{role: 'readWrite', db: '$DB_NAME'}]
-})
-" 2>/dev/null || print_message "$YELLOW" "⚠ Database user may already exist"
-
-print_message "$GREEN" "✓ MongoDB database configured"
-print_message "$YELLOW" "Database: $DB_NAME"
-print_message "$YELLOW" "Username: $DB_USER"
-print_message "$YELLOW" "Password: $DB_PASS (saved to $APP_DIR/.db_credentials)"
-
-# Save credentials
-cat > "$APP_DIR/.db_credentials" << EOF
-DATABASE: $DB_NAME
-USERNAME: $DB_USER
-PASSWORD: $DB_PASS
-EOF
-chmod 600 "$APP_DIR/.db_credentials"
-
-################################################################################
-# 7. Setup Backend
-################################################################################
-
-print_header "Step 7: Setting Up Backend"
-
-# Check if backend directory exists
-if [ ! -d "$APP_DIR/backend" ]; then
+# Check if backend-node directory exists
+if [ ! -d "$APP_DIR/backend-node" ]; then
     print_message "$RED" "✗ Backend directory not found. Please upload your code first."
     print_message "$YELLOW" "Upload your code to: $APP_DIR"
     exit 1
 fi
 
-cd "$APP_DIR/backend"
+cd "$APP_DIR/backend-node"
 
-# Create Python virtual environment
-print_message "$BLUE" "Creating Python virtual environment..."
-python3.11 -m venv venv
-source venv/bin/activate
+# Install Node.js dependencies
+print_message "$BLUE" "Installing Node.js dependencies..."
+yarn install
 
-# Install dependencies
-print_message "$BLUE" "Installing Python dependencies..."
-pip install --upgrade pip
-pip install -r requirements.txt
-
-# Generate JWT secret
-JWT_SECRET=$(openssl rand -hex 32)
+# Set JWT secret
+JWT_SECRET="65e93174cca7301b2b5af7f2f8d0e3ea84a731d00812e92746a06dd9a0231de194f4a146eb30c015113eaf87f9a59dd5c9a38451f5d3a01948f382c16efb48d4"
 
 # Create backend .env file
 print_message "$BLUE" "Creating backend environment configuration..."
 cat > .env << EOF
-# Database Configuration
-MONGO_URL=mongodb://$DB_USER:$DB_PASS@localhost:27017/$DB_NAME?authSource=$DB_NAME
-DB_NAME=$DB_NAME
+# Server Configuration
+PORT=$BACKEND_PORT
+NODE_ENV=production
 
 # Security
-JWT_SECRET_KEY=$JWT_SECRET
+JWT_SECRET=$JWT_SECRET
 
 # URLs
 FRONTEND_URL=https://$DOMAIN
@@ -208,15 +135,19 @@ EOF
 chmod 600 .env
 print_message "$GREEN" "✓ Backend configured successfully"
 
-# Create uploads directory
-mkdir -p static/uploads
-chmod 755 static/uploads
+# Create required directories
+mkdir -p database
+mkdir -p uploads/logos
+mkdir -p uploads/favicons
+chmod 755 uploads
+chmod 755 uploads/logos
+chmod 755 uploads/favicons
 
 ################################################################################
-# 8. Setup Frontend
+# 5. Setup Frontend
 ################################################################################
 
-print_header "Step 8: Setting Up Frontend"
+print_header "Step 5: Setting Up Frontend"
 
 cd "$APP_DIR/frontend"
 
@@ -227,7 +158,7 @@ yarn install
 # Create frontend .env file
 print_message "$BLUE" "Creating frontend environment configuration..."
 cat > .env << EOF
-REACT_APP_BACKEND_URL=https://$DOMAIN
+REACT_APP_BACKEND_URL=http://localhost:$BACKEND_PORT
 REACT_APP_SITE_NAME=IXA Digital
 EOF
 
@@ -238,16 +169,33 @@ yarn build
 print_message "$GREEN" "✓ Frontend built successfully"
 
 ################################################################################
-# 9. Configure Nginx
+# 6. Configure PM2 for Backend
 ################################################################################
 
-print_header "Step 9: Configuring Nginx"
+print_header "Step 6: Configuring PM2 for Backend"
+
+cd "$APP_DIR/backend-node"
+
+# Start backend with PM2
+print_message "$BLUE" "Starting backend with PM2..."
+pm2 delete ixadigital-backend 2>/dev/null || true
+pm2 start server.js --name ixadigital-backend --watch --max-memory-restart 500M
+pm2 save
+pm2 startup
+
+print_message "$GREEN" "✓ Backend started with PM2"
+
+################################################################################
+# 7. Configure Nginx
+################################################################################
+
+print_header "Step 7: Configuring Nginx"
 
 # Create Nginx configuration
 cat > /etc/nginx/sites-available/$DOMAIN << 'NGINX_CONFIG'
-# Backend API (FastAPI on port 8001)
+# Backend API (Node.js Express on port 3030)
 upstream backend_api {
-    server 127.0.0.1:8001;
+    server 127.0.0.1:3030;
 }
 
 server {
@@ -286,7 +234,7 @@ server {
     add_header X-XSS-Protection "1; mode=block" always;
     add_header Referrer-Policy "no-referrer-when-downgrade" always;
 
-    # API routes (proxy to FastAPI backend)
+    # API routes (proxy to Express backend)
     location /api/ {
         proxy_pass http://backend_api;
         proxy_http_version 1.1;
@@ -304,9 +252,9 @@ server {
         proxy_read_timeout 60s;
     }
 
-    # Static files from backend (uploads, etc.)
-    location /static/ {
-        alias /home/ixadigital/htdocs/ixadigital.com/backend/static/;
+    # Uploads from backend
+    location /uploads/ {
+        alias /home/ixadigital/htdocs/ixadigital.com/backend-node/uploads/;
         expires 30d;
         add_header Cache-Control "public, immutable";
     }
@@ -346,39 +294,22 @@ nginx -t && systemctl reload nginx
 print_message "$GREEN" "✓ Nginx configured successfully"
 
 ################################################################################
-# 10. Configure Supervisor
+# 8. Configure PM2 Startup
 ################################################################################
 
-print_header "Step 10: Configuring Supervisor"
+print_header "Step 8: Configuring PM2 Startup"
 
-# Create supervisor configuration
-cat > /etc/supervisor/conf.d/ixadigital.conf << EOF
-[group:ixadigital]
-programs=ixadigital_backend
+# Save PM2 process list and configure startup
+pm2 save
+sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u $USER --hp $HOME
 
-[program:ixadigital_backend]
-command=$APP_DIR/backend/venv/bin/uvicorn server:app --host 0.0.0.0 --port 8001 --workers 2
-directory=$APP_DIR/backend
-user=www-data
-autostart=true
-autorestart=true
-stderr_logfile=/var/log/supervisor/ixadigital_backend.err.log
-stdout_logfile=/var/log/supervisor/ixadigital_backend.out.log
-environment=PATH="$APP_DIR/backend/venv/bin"
-EOF
-
-# Update supervisor
-supervisorctl reread
-supervisorctl update
-supervisorctl start ixadigital:*
-
-print_message "$GREEN" "✓ Supervisor configured and services started"
+print_message "$GREEN" "✓ PM2 startup configured"
 
 ################################################################################
-# 11. SSL Certificate Setup
+# 9. SSL Certificate Setup
 ################################################################################
 
-print_header "Step 11: SSL Certificate Setup"
+print_header "Step 9: SSL Certificate Setup"
 
 print_message "$YELLOW" "⚠ SSL Certificate Setup Required"
 print_message "$BLUE" "To install SSL certificate, run:"
@@ -389,16 +320,16 @@ echo ""
 print_message "$YELLOW" "Make sure DNS is pointing to this server before running certbot!"
 
 ################################################################################
-# 12. Create Helpful Scripts
+# 10. Create Helpful Scripts
 ################################################################################
 
-print_header "Step 12: Creating Helper Scripts"
+print_header "Step 10: Creating Helper Scripts"
 
 # Create restart script
 cat > "$APP_DIR/restart.sh" << 'EOF'
 #!/bin/bash
 echo "Restarting IXA Digital services..."
-sudo supervisorctl restart ixadigital:*
+pm2 restart ixadigital-backend
 sudo systemctl reload nginx
 echo "✓ Services restarted"
 EOF
@@ -406,8 +337,8 @@ EOF
 # Create logs viewer script
 cat > "$APP_DIR/view-logs.sh" << 'EOF'
 #!/bin/bash
-echo "Viewing logs... (Press Ctrl+C to exit)"
-sudo tail -f /var/log/supervisor/ixadigital_backend.err.log
+echo "Viewing backend logs... (Press Ctrl+C to exit)"
+pm2 logs ixadigital-backend
 EOF
 
 # Create backup script
@@ -419,11 +350,12 @@ TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 mkdir -p $BACKUP_DIR
 
 echo "Creating database backup..."
-mongodump --db ixadigital_db --out "$BACKUP_DIR/db_$TIMESTAMP"
+tar -czf "$BACKUP_DIR/database_$TIMESTAMP.tar.gz" \
+  /home/ixadigital/htdocs/ixadigital.com/backend-node/database/
 
 echo "Creating uploads backup..."
 tar -czf "$BACKUP_DIR/uploads_$TIMESTAMP.tar.gz" \
-  /home/ixadigital/htdocs/ixadigital.com/backend/static/uploads/
+  /home/ixadigital/htdocs/ixadigital.com/backend-node/uploads/
 
 echo "✓ Backup completed: $BACKUP_DIR"
 ls -lh $BACKUP_DIR
@@ -437,10 +369,10 @@ print_message "$BLUE" "  - $APP_DIR/view-logs.sh (View logs)"
 print_message "$BLUE" "  - $APP_DIR/backup.sh (Backup database and files)"
 
 ################################################################################
-# 13. Create Automated Backup Cron
+# 11. Create Automated Backup Cron
 ################################################################################
 
-print_header "Step 13: Setting Up Automated Backups"
+print_header "Step 11: Setting Up Automated Backups"
 
 # Add cron job for daily backups at 2 AM
 (crontab -l 2>/dev/null; echo "0 2 * * * $APP_DIR/backup.sh >> /var/log/ixadigital_backup.log 2>&1") | crontab -
@@ -448,10 +380,10 @@ print_header "Step 13: Setting Up Automated Backups"
 print_message "$GREEN" "✓ Daily backups scheduled at 2:00 AM"
 
 ################################################################################
-# 14. Firewall Configuration
+# 12. Firewall Configuration
 ################################################################################
 
-print_header "Step 14: Configuring Firewall"
+print_header "Step 12: Configuring Firewall"
 
 if command -v ufw &> /dev/null; then
     ufw allow 22/tcp
@@ -465,22 +397,15 @@ else
 fi
 
 ################################################################################
-# 15. Final Checks
+# 13. Final Checks
 ################################################################################
 
-print_header "Step 15: Running Final Checks"
+print_header "Step 13: Running Final Checks"
 
 print_message "$BLUE" "Checking services..."
 
-# Check MongoDB
-if systemctl is-active --quiet mongod; then
-    print_message "$GREEN" "✓ MongoDB is running"
-else
-    print_message "$RED" "✗ MongoDB is not running"
-fi
-
-# Check Supervisor
-if supervisorctl status ixadigital:ixadigital_backend | grep -q RUNNING; then
+# Check PM2 Backend
+if pm2 list | grep -q "ixadigital-backend.*online"; then
     print_message "$GREEN" "✓ Backend is running"
 else
     print_message "$RED" "✗ Backend is not running"
@@ -508,15 +433,14 @@ cat << EOF
 📁 Application Directory: $APP_DIR
 
 🔐 Admin Credentials:
-   Username: $ADMIN_USER
+   Email: $ADMIN_USER
    Password: $ADMIN_PASS
-   ⚠️  CHANGE THIS PASSWORD IMMEDIATELY!
+   ⚠️  CHANGE THIS PASSWORD IMMEDIATELY in the admin panel!
 
-🗄️  Database Credentials:
-   Database: $DB_NAME
-   Username: $DB_USER
-   Password: $DB_PASS
-   Saved to: $APP_DIR/.db_credentials
+💾 Database:
+   Type: LowDB (JSON files)
+   Location: $APP_DIR/backend-node/database/
+   Files: admins.json, submissions.json, tickets.json, settings.json, content.json
 
 🌐 URLs:
    Website: http://$DOMAIN (HTTPS after SSL setup)
@@ -525,9 +449,10 @@ cat << EOF
 
 📝 Useful Commands:
    Restart services:    $APP_DIR/restart.sh
-   View logs:           $APP_DIR/view-logs.sh
+   View logs:           $APP_DIR/view-logs.sh (or: pm2 logs)
    Backup:              $APP_DIR/backup.sh
-   Check status:        sudo supervisorctl status
+   Check status:        pm2 status
+   PM2 monitoring:      pm2 monit
 
 📋 Next Steps:
 
@@ -580,13 +505,16 @@ IXA Digital Setup Summary
 Generated: $(date)
 
 Admin Credentials:
-Username: $ADMIN_USER
+Email: $ADMIN_USER
 Password: $ADMIN_PASS
 
 Database:
-Name: $DB_NAME
-User: $DB_USER
-Password: $DB_PASS
+Type: LowDB (JSON files)
+Location: $APP_DIR/backend-node/database/
+
+Backend:
+Port: $BACKEND_PORT
+Process Manager: PM2
 
 Application: $APP_DIR
 Domain: $DOMAIN
@@ -600,6 +528,3 @@ print_message "$GREEN" "Setup summary saved to: $APP_DIR/SETUP_SUMMARY.txt"
 print_message "$YELLOW" "\n⚠️  Remember to setup SSL certificate for HTTPS!"
 
 exit 0
-EOF
-chmod +x /app/setup.sh
-echo "✅ Setup script created successfully"
