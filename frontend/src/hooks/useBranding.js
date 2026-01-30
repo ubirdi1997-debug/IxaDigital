@@ -50,11 +50,6 @@ export const useBranding = () => {
         cacheTimestamp = now;
         
         setBranding(brandingData);
-        
-        // Update page title
-        if (brandingData.company_name) {
-          document.title = `${brandingData.company_name} - Results-Driven Digital Solutions`;
-        }
       }
     } catch (error) {
       console.error('Failed to fetch branding:', error);

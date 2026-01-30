@@ -2,6 +2,7 @@ import React, { useState, lazy, Suspense } from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "./components/ui/sonner";
+import { useSEO } from "./hooks/useSEO";
 
 // Eager load critical components
 import Header from "./components/Header";
@@ -80,6 +81,7 @@ const Home = () => {
 };
 
 function App() {
+  useSEO();
   return (
     <div className="App">
       <BrowserRouter>
