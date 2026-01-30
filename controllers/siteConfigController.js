@@ -60,6 +60,16 @@ exports.saveSiteConfig = async (req, res) => {
     });
   } catch (error) {
     console.error('Error saving site config:', error);
+    
+    // Handle Mongoose validation errors
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        error: error.message
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Error saving site configuration',

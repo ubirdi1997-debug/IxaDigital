@@ -82,6 +82,15 @@ exports.saveSEOFields = async (req, res) => {
   } catch (error) {
     console.error('Error saving SEO fields:', error);
     
+    // Handle Mongoose validation errors
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        error: error.message
+      });
+    }
+    
     // Handle duplicate key error
     if (error.code === 11000) {
       return res.status(400).json({

@@ -7,10 +7,7 @@ const SEOFields = require('../models/SEOFields');
 const TEST_MONGODB_URI = process.env.TEST_MONGODB_URI || 'mongodb://localhost:27017/ixadigital_test';
 
 beforeAll(async () => {
-  await mongoose.connect(TEST_MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-  });
+  await mongoose.connect(TEST_MONGODB_URI);
 });
 
 afterAll(async () => {

@@ -11,9 +11,6 @@ const seoFieldsRoutes = require('./routes/seoFields');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Connect to database
-connectDB();
-
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
@@ -43,7 +40,15 @@ app.get('/', (req, res) => {
   });
 });
 
-// Error handling middleware
+// 404 handler - must come before error handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Route not found'
+  });
+});
+
+// Error handling middleware - must have 4 parameters
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
@@ -53,17 +58,16 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Route not found'
+// Start server only when run directly (not when imported by tests)
+if (require.main === module) {
+  connectDB().then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+    });
+  }).catch((err) => {
+    console.error('Failed to start server:', err);
+    process.exit(1);
   });
-});
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+}
 
 module.exports = app;
