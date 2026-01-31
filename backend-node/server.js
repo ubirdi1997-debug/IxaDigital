@@ -7,7 +7,7 @@ const helmet = require('helmet');
 const fs = require('fs');
 
 // Import database and routes
-const { initAllDatabases } = require('./database');
+const { initAllDatabases, databases } = require('./database');
 
 // Initialize Express app
 const app = express();
@@ -67,9 +67,36 @@ async function startServer() {
         etag: true
       }));
 
+      const indexPath = path.join(frontendBuildPath, 'index.html');
+
+      const injectSiteVerification = (html, verificationCode) => {
+        if (!verificationCode) return html;
+
+        const metaTag = `<meta name="google-site-verification" content="${verificationCode}" />`;
+        const existingMetaRegex = /<meta\s+name=["']google-site-verification["'][^>]*>/i;
+
+        if (existingMetaRegex.test(html)) {
+          return html.replace(existingMetaRegex, metaTag);
+        }
+
+        return html.replace('</head>', `  ${metaTag}\n</head>`);
+      };
+
       // SPA fallback - all non-API routes serve index.html
-      app.get('*', (req, res) => {
-        res.sendFile(path.join(frontendBuildPath, 'index.html'));
+      app.get('*', async (req, res) => {
+        try {
+          let html = fs.readFileSync(indexPath, 'utf8');
+
+          await databases.settings.read();
+          const verificationCode = databases.settings.data?.seo?.google_site_verification;
+
+          html = injectSiteVerification(html, verificationCode);
+          res.setHeader('Content-Type', 'text/html');
+          return res.send(html);
+        } catch (error) {
+          console.error('Error serving index.html:', error);
+          return res.sendFile(indexPath);
+        }
       });
     } else {
       app.get('*', (req, res) => {

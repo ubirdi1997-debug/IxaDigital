@@ -355,24 +355,66 @@ router.get('/content/:page', verifyToken, async (req, res) => {
 // Update page content
 router.put('/content', verifyToken, async (req, res) => {
   try {
-    const { page, hero, about, cta_section, footer } = req.body;
+    const { page, hero, about, cta_section, footer, services, menu_items, process_steps, industries } = req.body;
+    
+    console.log('📝 Content Update Request:', {
+      page,
+      hasHero: !!hero,
+      hasAbout: !!about,
+      hasCTA: !!cta_section,
+      hasFooter: !!footer
+    });
     
     await databases.content.read();
     
+    // Initialize page if it doesn't exist
     if (!databases.content.data[page]) {
       databases.content.data[page] = {};
+      console.log(`✓ Initialized new page: ${page}`);
     }
     
-    if (hero) databases.content.data[page].hero = hero;
-    if (about) databases.content.data[page].about = about;
-    if (cta_section) databases.content.data[page].cta_section = cta_section;
-    if (footer) databases.content.data[page].footer = footer;
+    // Update all provided fields
+    if (hero) {
+      databases.content.data[page].hero = hero;
+      console.log('✓ Updated hero:', hero);
+    }
+    if (about) {
+      databases.content.data[page].about = about;
+      console.log('✓ Updated about:', about);
+    }
+    if (cta_section) {
+      databases.content.data[page].cta_section = cta_section;
+      console.log('✓ Updated cta_section:', cta_section);
+    }
+    if (footer) {
+      databases.content.data[page].footer = footer;
+      console.log('✓ Updated footer:', footer);
+    }
+    if (services) {
+      databases.content.data[page].services = services;
+      console.log('✓ Updated services');
+    }
+    if (menu_items) {
+      databases.content.data[page].menu_items = menu_items;
+      console.log('✓ Updated menu_items');
+    }
+    if (process_steps) {
+      databases.content.data[page].process_steps = process_steps;
+      console.log('✓ Updated process_steps');
+    }
+    if (industries) {
+      databases.content.data[page].industries = industries;
+      console.log('✓ Updated industries');
+    }
     
+    // Write to database file
     await databases.content.write();
+    console.log('✓ Content saved to database');
     
     res.json({ success: true, message: 'Content updated successfully' });
   } catch (error) {
-    res.status(500).json({ detail: 'Failed to update content' });
+    console.error('❌ Content update error:', error);
+    res.status(500).json({ detail: 'Failed to update content: ' + error.message });
   }
 });
 

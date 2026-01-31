@@ -994,19 +994,25 @@ async def update_page_content(
             update_data["cta_section"] = content_update.cta_section
         
         if existing_content:
+            logger.info(f"Updating existing content for page: {content_update.page}")
             result = await db.page_content.update_one(
                 {"page": content_update.page},
                 {"$set": update_data}
             )
+            logger.info(f"Update result: matched={result.matched_count}, modified={result.modified_count}")
             if result.modified_count == 0:
+                logger.warning("No changes made to content")
                 return {"success": False, "message": "No changes made"}
         else:
             # Create new content
+            logger.info(f"Creating new content for page: {content_update.page}")
             new_content = PageContent(page=content_update.page, **update_data)
-            await db.page_content.insert_one(new_content.dict())
+            insert_result = await db.page_content.insert_one(new_content.dict())
+            logger.info(f"Inserted new content with id: {insert_result.inserted_id}")
         
         # Clear cache when content is updated
         clear_cache()
+        logger.info("Cache cleared")
         
         return {"success": True, "message": "Content updated successfully"}
     except Exception as e:

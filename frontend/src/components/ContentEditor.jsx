@@ -30,14 +30,19 @@ const ContentEditor = () => {
   const fetchContent = async () => {
     try {
       const token = localStorage.getItem('adminToken');
+      console.log('🔍 Fetching content from:', `${BACKEND_URL}/api/admin/content/homepage`);
+      
       const response = await axios.get(`${BACKEND_URL}/api/admin/content/homepage`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+
+      console.log('📦 Received content:', response.data);
 
       if (response.data.content) {
         setContent(response.data.content);
       } else {
         // Initialize with default structure
+        console.log('⚠️ No content found, initializing defaults');
         setContent({
           page: 'homepage',
           hero: {
@@ -78,6 +83,7 @@ const ContentEditor = () => {
         });
       }
     } catch (error) {
+      console.error('❌ Fetch error:', error.response?.data || error.message);
       if (error.response?.status === 401) {
         navigate('/admin/login');
       } else {
@@ -92,14 +98,38 @@ const ContentEditor = () => {
     setIsSaving(true);
     try {
       const token = localStorage.getItem('adminToken');
-      await axios.put(
+      
+      // Prepare payload with proper structure
+      const payload = {
+        page: content.page || 'homepage',
+        hero: content.hero || {},
+        about: content.about || {},
+        services: content.services || [],
+        menu_items: content.menu_items || [],
+        process_steps: content.process_steps || [],
+        industries: content.industries || [],
+        footer: content.footer || {},
+        cta_section: content.cta_section || {}
+      };
+      
+      console.log('Saving content:', payload);
+      
+      const response = await axios.put(
         `${BACKEND_URL}/api/admin/content`,
-        content,
+        payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      toast.success('Content saved successfully!');
+      
+      console.log('Save response:', response.data);
+      
+      if (response.data.success) {
+        toast.success('Content saved successfully!');
+      } else {
+        toast.error(response.data.message || 'Failed to save content');
+      }
     } catch (error) {
-      toast.error('Failed to save content');
+      console.error('Save error:', error.response?.data || error.message);
+      toast.error(error.response?.data?.detail || 'Failed to save content');
     } finally {
       setIsSaving(false);
     }

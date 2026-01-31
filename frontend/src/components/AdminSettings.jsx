@@ -534,10 +534,10 @@ const AdminSettings = () => {
                 <Input
                   value={seoSettings.google_analytics_id}
                   onChange={(e) => handleSEOChange('google_analytics_id', e.target.value)}
-                  placeholder="G-XXXXXXXXXX or UA-XXXXXXXXX"
+                  placeholder="G-XXXXXXXXXX or UA-XXXXXXXXX or GTM-XXXXXXX"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Get this from Google Analytics dashboard
+                  <strong>GA4:</strong> G-XXXXXXXXXX | <strong>GA3:</strong> UA-XXXXXXXXX | <strong>GTM:</strong> GTM-XXXXXXX
                 </p>
               </div>
 
@@ -546,8 +546,13 @@ const AdminSettings = () => {
                 <Input
                   value={seoSettings.google_site_verification}
                   onChange={(e) => handleSEOChange('google_site_verification', e.target.value)}
-                  placeholder="verification code"
+                  placeholder="e.g., abc123xyz456"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Paste ONLY the verification code (the content value), not the full meta tag. 
+                  Example: If Google gives you &lt;meta name="google-site-verification" content="<strong>abc123xyz456</strong>" /&gt;, 
+                  paste only <strong>abc123xyz456</strong>
+                </p>
               </div>
 
               <div>
