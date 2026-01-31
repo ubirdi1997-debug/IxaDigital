@@ -749,6 +749,10 @@ async def update_settings(
                 new_settings.email_settings = settings_update.email_settings
             if settings_update.seo_settings:
                 new_settings.seo_settings = settings_update.seo_settings
+            if settings_update.branding:
+                new_settings.branding = settings_update.branding
+            if settings_update.recaptcha_settings:
+                new_settings.recaptcha_settings = settings_update.recaptcha_settings
             new_settings.updated_by = current_admin["username"]
             
             await db.settings.insert_one(new_settings.dict())
@@ -758,8 +762,15 @@ async def update_settings(
                 update_data["email_settings"] = settings_update.email_settings.dict()
             if settings_update.seo_settings:
                 update_data["seo_settings"] = settings_update.seo_settings.dict()
+            if settings_update.branding:
+                update_data["branding"] = settings_update.branding
+            if settings_update.recaptcha_settings:
+                update_data["recaptcha_settings"] = settings_update.recaptcha_settings
             
             await db.settings.update_one({}, {"$set": update_data})
+
+        # Clear cached settings so frontend gets latest values immediately
+        clear_cache()
         
         return {"success": True, "message": "Settings updated successfully"}
     except Exception as e:

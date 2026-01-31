@@ -3,7 +3,15 @@ import { ArrowRight, Play } from 'lucide-react';
 import { Button } from './ui/button';
 import { heroImages } from '../data/mock';
 
-const Hero = ({ onCTAClick, onViewServices }) => {
+const Hero = ({ hero, onCTAClick, onViewServices }) => {
+  const heroContent = hero || {};
+  const stats = heroContent.stats?.length
+    ? heroContent.stats
+    : [
+        { value: '500+', label: 'Projects Delivered' },
+        { value: '98%', label: 'Client Satisfaction' },
+        { value: '5+', label: 'Years Experience' }
+      ];
   return (
     <section className="relative pt-32 pb-20 lg:pt-40 lg:pb-32 overflow-hidden bg-gradient-to-br from-gray-50 to-white">
       {/* Background Pattern */}
@@ -23,13 +31,20 @@ const Hero = ({ onCTAClick, onViewServices }) => {
             </div>
             
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-              Results-Driven{' '}
-              <span className="text-red-600">SEO, Marketing</span> & Development Solutions
+              {heroContent.headline || (
+                <>
+                  Results-Driven <span className="text-red-600">SEO, Marketing</span> & Development Solutions
+                </>
+              )}
             </h1>
             
             <p className="text-lg sm:text-xl text-gray-600 mb-8 leading-relaxed">
-              Helping brands grow through SEO, digital marketing, web & app development. 
-              Data-driven strategies that deliver measurable results.
+              {heroContent.subheadline || (
+                <>
+                  Helping brands grow through SEO, digital marketing, web & app development. 
+                  Data-driven strategies that deliver measurable results.
+                </>
+              )}
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4">
@@ -38,7 +53,7 @@ const Hero = ({ onCTAClick, onViewServices }) => {
                 size="lg"
                 className="bg-red-600 hover:bg-red-700 text-white px-8 py-6 text-lg transition-all hover:shadow-lg hover:scale-105"
               >
-                Get a Free Consultation
+                {heroContent.cta_primary || 'Get a Free Consultation'}
                 <ArrowRight className="ml-2" size={20} />
               </Button>
               
@@ -48,25 +63,19 @@ const Hero = ({ onCTAClick, onViewServices }) => {
                 variant="outline"
                 className="border-2 border-gray-300 hover:border-red-600 text-gray-700 hover:text-red-600 px-8 py-6 text-lg transition-all"
               >
-                View Our Services
+                {heroContent.cta_secondary || 'View Our Services'}
                 <Play className="ml-2" size={20} />
               </Button>
             </div>
 
             {/* Stats */}
             <div className="grid grid-cols-3 gap-6 mt-12 pt-8 border-t border-gray-200">
-              <div>
-                <div className="text-3xl font-bold text-red-600 mb-1">500+</div>
-                <div className="text-sm text-gray-600">Projects Delivered</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold text-red-600 mb-1">98%</div>
-                <div className="text-sm text-gray-600">Client Satisfaction</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold text-red-600 mb-1">5+</div>
-                <div className="text-sm text-gray-600">Years Experience</div>
-              </div>
+              {stats.map((stat, index) => (
+                <div key={index}>
+                  <div className="text-3xl font-bold text-red-600 mb-1">{stat.value}</div>
+                  <div className="text-sm text-gray-600">{stat.label}</div>
+                </div>
+              ))}
             </div>
           </div>
 

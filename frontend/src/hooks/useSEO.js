@@ -5,7 +5,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || window.location.origin;
 
 let seoCache = null;
 let seoCacheTimestamp = null;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 30 * 1000; // 30 seconds
 
 const ensureMetaTag = (name, attr = 'name') => {
   let tag = document.querySelector(`meta[${attr}="${name}"]`);
@@ -15,6 +15,22 @@ const ensureMetaTag = (name, attr = 'name') => {
     document.head.appendChild(tag);
   }
   return tag;
+};
+
+const ensureScriptTag = (src, attributes = {}) => {
+  let tag = document.querySelector(`script[src="${src}"]`);
+  if (!tag) {
+    tag = document.createElement('script');
+    tag.setAttribute('src', src);
+    Object.entries(attributes).forEach(([key, value]) => tag.setAttribute(key, value));
+    document.head.appendChild(tag);
+  }
+  return tag;
+};
+
+const removeScriptTagsByAttr = (attrName, attrValue) => {
+  const tags = document.querySelectorAll(`script[${attrName}="${attrValue}"]`);
+  tags.forEach((tag) => tag.remove());
 };
 
 const ensureLinkTag = (rel) => {
@@ -47,6 +63,56 @@ export const useSEO = () => {
 
     if (seoData.google_site_verification) {
       ensureMetaTag('google-site-verification').setAttribute('content', seoData.google_site_verification);
+    }
+
+    const gaId = seoData.google_analytics_id?.trim();
+    if (gaId) {
+      const isGtm = gaId.startsWith('GTM-');
+
+      // Clean up prior GA/GTM scripts
+      removeScriptTagsByAttr('data-gtag-id', 'ixadigital-ga-config');
+      removeScriptTagsByAttr('data-gtm-id', 'ixadigital-gtm-config');
+      const gaScripts = document.querySelectorAll('script[src*="googletagmanager.com/gtag/js"]');
+      gaScripts.forEach((tag) => tag.remove());
+      const gtmScripts = document.querySelectorAll('script[src*="googletagmanager.com/gtm.js"]');
+      gtmScripts.forEach((tag) => tag.remove());
+
+      if (isGtm) {
+        const existingGtm = document.querySelector('script[data-gtm-id="ixadigital-gtm-config"]');
+        const gtmScriptText = `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${gaId}');`;
+
+        if (!existingGtm) {
+          const configScript = document.createElement('script');
+          configScript.setAttribute('data-gtm-id', 'ixadigital-gtm-config');
+          configScript.text = gtmScriptText;
+          document.head.appendChild(configScript);
+        } else {
+          existingGtm.text = gtmScriptText;
+        }
+      } else {
+        // Load GA script (gtag.js)
+        const gtagSrc = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gaId)}`;
+        ensureScriptTag(gtagSrc, { async: 'true', 'data-gtag-id': gaId });
+
+        // Inject config script (inline)
+        const existingConfig = document.querySelector('script[data-gtag-id="ixadigital-ga-config"]');
+        if (!existingConfig) {
+          const configScript = document.createElement('script');
+          configScript.setAttribute('data-gtag-id', 'ixadigital-ga-config');
+          configScript.text = `window.dataLayer = window.dataLayer || [];\nfunction gtag(){dataLayer.push(arguments);}\ngtag('js', new Date());\ngtag('config', '${gaId}');`;
+          document.head.appendChild(configScript);
+        } else {
+          existingConfig.text = `window.dataLayer = window.dataLayer || [];\nfunction gtag(){dataLayer.push(arguments);}\ngtag('js', new Date());\ngtag('config', '${gaId}');`;
+        }
+      }
+    } else {
+      // Remove GA/GTM scripts if ID is cleared
+      const gaScripts = document.querySelectorAll('script[src*="googletagmanager.com/gtag/js"]');
+      gaScripts.forEach((tag) => tag.remove());
+      const gtmScripts = document.querySelectorAll('script[src*="googletagmanager.com/gtm.js"]');
+      gtmScripts.forEach((tag) => tag.remove());
+      removeScriptTagsByAttr('data-gtag-id', 'ixadigital-ga-config');
+      removeScriptTagsByAttr('data-gtm-id', 'ixadigital-gtm-config');
     }
 
     if (seoData.og_image) {

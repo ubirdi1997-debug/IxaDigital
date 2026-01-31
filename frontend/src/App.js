@@ -3,6 +3,7 @@ import "@/App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "./components/ui/sonner";
 import { useSEO } from "./hooks/useSEO";
+import { usePageContent } from "./hooks/usePageContent";
 
 // Eager load critical components
 import Header from "./components/Header";
@@ -39,6 +40,7 @@ const PageLoader = () => (
 );
 
 const Home = () => {
+  const { content } = usePageContent('homepage');
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
 
@@ -60,16 +62,24 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-white">
       <Header onCTAClick={handleCTAClick} />
-      <Hero onCTAClick={handleCTAClick} onViewServices={handleViewServices} />
+      <Hero
+        hero={content?.hero}
+        onCTAClick={handleCTAClick}
+        onViewServices={handleViewServices}
+      />
       
       <Suspense fallback={<div className="h-96 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div></div>}>
-        <About />
+        <About about={content?.about} />
         <Services onCTAClick={handleCTAClick} />
         <WhyChooseUs />
         <Process />
         <Industries />
-        <CTA onCTAClick={handleCTAClick} />
-        <Footer onCTAClick={handleCTAClick} onTicketClick={handleTicketClick} />
+        <CTA ctaSection={content?.cta_section} onCTAClick={handleCTAClick} />
+        <Footer
+          footer={content?.footer}
+          onCTAClick={handleCTAClick}
+          onTicketClick={handleTicketClick}
+        />
         <ContactModal isOpen={isContactModalOpen} onClose={() => setIsContactModalOpen(false)} />
         <SupportTicketModal isOpen={isTicketModalOpen} onClose={() => setIsTicketModalOpen(false)} />
       </Suspense>

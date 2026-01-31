@@ -3,8 +3,10 @@ import { Mail, Phone, Linkedin, Twitter, Facebook, Instagram, Ticket, Search } f
 import { contactInfo } from '../data/mock';
 import { useBranding } from '../hooks/useBranding';
 
-const Footer = ({ onCTAClick, onTicketClick }) => {
+const Footer = ({ footer, onCTAClick, onTicketClick }) => {
   const { branding } = useBranding();
+  const footerContent = footer || {};
+  const socialLinks = footerContent.social_links || {};
   const scrollToSection = (id) => {
     const element = document.getElementById(id);
     if (element) {
@@ -24,19 +26,20 @@ const Footer = ({ onCTAClick, onTicketClick }) => {
               className="h-12 w-auto mb-4 bg-white p-2 rounded"
             />
             <p className="text-gray-400 mb-4 leading-relaxed">
-              Results-driven digital growth partner delivering SEO, marketing, web & app development solutions.
+              {footerContent.company_description ||
+                'Results-driven digital growth partner delivering SEO, marketing, web & app development solutions.'}
             </p>
             <div className="flex space-x-3">
-              <a href="#" className="w-10 h-10 bg-gray-800 hover:bg-red-600 rounded-full flex items-center justify-center transition-colors">
+              <a href={socialLinks.facebook || '#'} className="w-10 h-10 bg-gray-800 hover:bg-red-600 rounded-full flex items-center justify-center transition-colors">
                 <Facebook size={18} />
               </a>
-              <a href="#" className="w-10 h-10 bg-gray-800 hover:bg-red-600 rounded-full flex items-center justify-center transition-colors">
+              <a href={socialLinks.twitter || '#'} className="w-10 h-10 bg-gray-800 hover:bg-red-600 rounded-full flex items-center justify-center transition-colors">
                 <Twitter size={18} />
               </a>
-              <a href="#" className="w-10 h-10 bg-gray-800 hover:bg-red-600 rounded-full flex items-center justify-center transition-colors">
+              <a href={socialLinks.linkedin || '#'} className="w-10 h-10 bg-gray-800 hover:bg-red-600 rounded-full flex items-center justify-center transition-colors">
                 <Linkedin size={18} />
               </a>
-              <a href="#" className="w-10 h-10 bg-gray-800 hover:bg-red-600 rounded-full flex items-center justify-center transition-colors">
+              <a href={socialLinks.instagram || '#'} className="w-10 h-10 bg-gray-800 hover:bg-red-600 rounded-full flex items-center justify-center transition-colors">
                 <Instagram size={18} />
               </a>
             </div>
